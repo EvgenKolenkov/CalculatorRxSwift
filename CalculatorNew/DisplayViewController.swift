@@ -20,17 +20,18 @@ class DisplayViewController: UIViewController {
     let secondNumber = PublishSubject<String>()
     var number = ""
     var operation = ""
+    var perсentNumber = ""
     var result = 0.0
     var operationWasTapped = false
     var equalsWasTapped = false
     let bag = DisposeBag()
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
         numberSubject.subscribe(onNext: { value in
             self.displayLabel.text = value
-            //print("number\(self.number)")
+            print("number = \(self.number)")
         })
             .disposed(by: bag)
         
@@ -57,7 +58,6 @@ class DisplayViewController: UIViewController {
             equalsWasTapped = false
             return
         }
-        
         if operationWasTapped == false {
             firstNumber.onNext(checkNumber(digit: digit))
         } else {
@@ -73,6 +73,9 @@ class DisplayViewController: UIViewController {
             handleResult(result: result)
             firstNumber.onNext(result != 0 ? String(result) : "0")
             secondNumber.onNext(operation == "x" || operation == "÷" ? "1" : "0")
+            perсentNumber = String(result)
+        } else {
+            perсentNumber = number
         }
         operationWasTapped = true
         number = ""
@@ -87,6 +90,27 @@ class DisplayViewController: UIViewController {
             }
        }
   
+    @IBAction func perсentButtonAction(_ sender: UIButton) {
+        if !operationWasTapped {
+            number = String(convertNumber(number: number) / 100)
+            handleResult(result: convertNumber(number: number))
+            firstNumber.onNext(number)
+        } else {
+            number = String(convertNumber(number: perсentNumber) / 100 * convertNumber(number: number))
+            handleResult(result: convertNumber(number: number))
+            secondNumber.onNext(number)
+        }
+    }
+    
+    @IBAction func plusMinusButtonAction(_ sender: UIButton) {
+        if !equalsWasTapped {
+            operationWasTapped ? convertSubject(subject: secondNumber) :                 convertSubject(subject: firstNumber)
+        } else {
+            handleResult(result: -result)
+            result = -result
+        }
+    }
+    
     @IBAction func equalsButton(_ sender: UIButton) {
         equalsWasTapped = true
         handleResult(result: result)
@@ -118,14 +142,34 @@ class DisplayViewController: UIViewController {
         default: break
         }
         self.result = result
-        //print("result\(self.result)")
+        print("result\(self.result)")
     }
     
-    func handleResult(result: Double) {
+    func handleResult(result: Double) -> () {
+        let convertResult = String(result)
+        let convertIntResult = String(Int(result))
         if result.remainder(dividingBy: 1) == 0 {
-            numberSubject.onNext(String(Int((result))))
+           return numberSubject.onNext(convertIntResult)
         } else {
-            numberSubject.onNext(String(result))
+           return numberSubject.onNext(convertResult)
+        }
+    }
+    
+    func convertNumber(number: String) -> Double {
+        guard let convertNumber = Double(number) else {return 0.0}
+        return convertNumber
+    }
+    
+    func convertSubject(subject: PublishSubject<String>) {
+        let convertedNumber = convertNumber(number: number)
+        if convertedNumber.remainder(dividingBy: 1) == 0 {
+            number = String(Int(-convertedNumber))
+            handleResult(result: -convertedNumber)
+            subject.onNext(number)
+        } else {
+            number = String(-convertedNumber)
+            handleResult(result: -convertedNumber)
+            subject.onNext(number)
         }
     }
 }
