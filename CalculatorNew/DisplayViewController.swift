@@ -8,12 +8,10 @@
 
 import UIKit
 import RxSwift
-import RxCocoa
 
 class DisplayViewController: UIViewController {
     
     @IBOutlet weak var displayLabel: UILabel!
-    @IBOutlet weak var commaButton: UIButton!
     
     let numberSubject = BehaviorSubject<String>(value: "0")
     let firstNumber = PublishSubject<String>()
@@ -138,11 +136,13 @@ class DisplayViewController: UIViewController {
         case "+": result = firstNumber + secondNumber
         case "-": result = firstNumber - secondNumber
         case "x": result = firstNumber * secondNumber
-        case "÷": result = firstNumber / secondNumber
+        case "÷": if secondNumber != 0 {
+            result = firstNumber / secondNumber
+        }
         default: break
         }
         self.result = result
-        print("result\(self.result)")
+        print("result = \(self.result)")
     }
     
     func handleResult(result: Double) -> () {
